@@ -10,27 +10,20 @@ type Mode = 'conversation' | 'translator' | 'dictionary';
 type TutorLang = 'hindi' | 'english';
 
 export default function Home() {
-  // --- Profile & State ---
   const [username, setUsername] = useState("Arjun");
   const [age, setAge] = useState(18);
   const [tutorLang, setTutorLang] = useState<TutorLang>('hindi');
   const [mode, setMode] = useState<Mode>('conversation');
-
-  // --- Interaction State ---
   const [isListening, setIsListening] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [isThinking, setIsThinking] = useState(false);
-
-  // --- Text Input State ---
   const [showTextInput, setShowTextInput] = useState(false);
   const [textInput, setTextInput] = useState("");
 
   const [transcript, setTranscript] = useState("");
-
-  // --- DUAL RESPONSE STATE ---
   const [responseEn, setResponseEn] = useState("");
   const [responseHi, setResponseHi] = useState("");
-  const [showEnglishInCard, setShowEnglishInCard] = useState(false); // Toggle state
+  const [showEnglishInCard, setShowEnglishInCard] = useState(false);
 
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
 
@@ -43,7 +36,6 @@ export default function Home() {
     latestState.current = { username, age, mode, tutorLang, selectedImage };
   }, [username, age, mode, tutorLang, selectedImage]);
 
-  // --- Initialize Speech ---
   useEffect(() => {
     if (typeof window !== 'undefined') {
       synthRef.current = window.speechSynthesis;
@@ -66,7 +58,6 @@ export default function Home() {
     }
   }, []);
 
-  // --- Handlers ---
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
@@ -111,17 +102,12 @@ export default function Home() {
       });
 
       const data = await res.json();
-
-      // Store BOTH responses
-      if (data.english && data.hindi) {
+      if (data.english) {
         setResponseEn(data.english);
         setResponseHi(data.hindi);
 
-        // Decide which language to show/speak first based on Tutor Mode
         const isHindiTutor = lang === 'hindi';
-        setShowEnglishInCard(!isHindiTutor); // If Hindi Tutor, show Hindi (English is hidden)
-
-        // Speak the PRIMARY language immediately
+        setShowEnglishInCard(!isHindiTutor);
         if (isHindiTutor) {
           speakText(data.hindi, 'hi-IN');
         } else {
@@ -129,8 +115,8 @@ export default function Home() {
         }
 
         if (img) clearImage();
-        setTextInput(""); // Clear text box if used
-        setShowTextInput(false); // Close text box
+        setTextInput("");
+        setShowTextInput(false);
       }
     } catch (err) {
       console.error(err);
@@ -159,7 +145,6 @@ export default function Home() {
     handleAISubmission(textInput, selectedImage, username, age, mode, tutorLang);
   };
 
-  // --- Styles ---
   const bgColor = tutorLang === 'hindi' ? 'bg-orange-500' : 'bg-blue-600';
   const textColor = tutorLang === 'hindi' ? 'text-orange-400' : 'text-blue-400';
   const borderColor = tutorLang === 'hindi' ? 'border-orange-500' : 'border-blue-500';
@@ -169,7 +154,6 @@ export default function Home() {
 
       <div className={`absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] rounded-full blur-[120px] pointer-events-none transition-colors duration-1000 ${tutorLang === 'hindi' ? 'bg-orange-600/10' : 'bg-blue-600/10'}`} />
 
-      {/* --- HEADER --- */}
       <div className="z-30 w-full max-w-md flex justify-between items-center mb-4 pt-2">
         <h1 className="text-xl font-bold tracking-tight">Linguist AI</h1>
         <button
@@ -183,7 +167,6 @@ export default function Home() {
         </button>
       </div>
 
-      {/* --- SETTINGS --- */}
       <div className="z-20 w-full max-w-md bg-gray-900/60 backdrop-blur-md border border-gray-800 rounded-2xl p-4 mb-4">
         <div className="flex justify-between items-center mb-3">
           <div className="flex flex-col w-1/2">
@@ -204,7 +187,6 @@ export default function Home() {
         </div>
       </div>
 
-      {/* --- MODE TABS --- */}
       <div className="z-20 w-full max-w-md flex bg-gray-900 rounded-xl p-1 mb-6 border border-gray-800">
         {[
           { id: 'conversation', icon: MessageCircle, label: 'Chat' },
@@ -221,7 +203,6 @@ export default function Home() {
         ))}
       </div>
 
-      {/* --- IMAGE PREVIEW --- */}
       {selectedImage && (
         <div className="z-20 w-full max-w-md bg-gray-800 rounded-xl p-2 mb-4 relative border border-gray-700">
           <button onClick={clearImage} className="absolute -top-2 -right-2 bg-red-500 rounded-full p-1 shadow-md"><X className="w-4 h-4 text-white" /></button>
@@ -235,19 +216,15 @@ export default function Home() {
         </div>
       )}
 
-      {/* --- MAIN INTERACTION AREA --- */}
       <div className="z-10 w-full max-w-md flex flex-col items-center gap-6">
 
-        {/* INPUT CONTROLS */}
         {!showTextInput ? (
           <div className="flex items-center justify-center gap-6">
-            {/* Camera */}
             <div className="relative group">
               <input type="file" accept="image/*" className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-20" onChange={handleImageUpload} ref={fileInputRef} />
               <button className="w-14 h-14 rounded-full bg-gray-800 border border-gray-700 flex items-center justify-center hover:bg-gray-700 transition-colors shadow-lg"><Camera className="w-6 h-6 text-gray-300" /></button>
             </div>
 
-            {/* Big Mic */}
             <div className="relative">
               {isListening && <div className={`absolute inset-0 rounded-full border-4 animate-ping opacity-75 ${borderColor}`}></div>}
               <button onClick={toggleListening} className={`w-24 h-24 rounded-full flex items-center justify-center transition-transform shadow-2xl border-4 ${isListening ? 'bg-red-500 border-red-400 scale-110' : isThinking ? 'bg-white border-gray-200 animate-pulse' : `bg-gray-800 ${borderColor}`}`}>
@@ -255,13 +232,11 @@ export default function Home() {
               </button>
             </div>
 
-            {/* Keyboard Toggle */}
             <button onClick={() => setShowTextInput(true)} className="w-14 h-14 rounded-full bg-gray-800 border border-gray-700 flex items-center justify-center hover:bg-gray-700 transition-colors shadow-lg">
               <Keyboard className="w-6 h-6 text-gray-300" />
             </button>
           </div>
         ) : (
-          // Text Input Mode
           <div className="w-full flex gap-2 items-center animate-in fade-in slide-in-from-bottom-4">
             <button onClick={() => setShowTextInput(false)} className="p-3 rounded-full bg-gray-800 text-gray-400"><X className="w-5 h-5" /></button>
             <input
@@ -278,12 +253,10 @@ export default function Home() {
           </div>
         )}
 
-        {/* --- DUAL LANGUAGE RESPONSE CARD --- */}
         {responseEn && (
           <div className="w-full animate-in zoom-in-50 duration-300 pb-12">
             <div className={`relative p-6 rounded-2xl border shadow-lg backdrop-blur-sm ${tutorLang === 'hindi' ? 'bg-orange-950/40 border-orange-500/30' : 'bg-blue-950/40 border-blue-500/30'}`}>
 
-              {/* Header with Volume and Toggle */}
               <div className="flex items-center justify-between mb-4">
                 <span className={`text-xs font-bold uppercase ${textColor}`}>AI Explanation</span>
 
@@ -294,19 +267,19 @@ export default function Home() {
                   >
                     <Volume2 className={`w-5 h-5 ${isSpeaking ? 'text-green-400 animate-pulse' : 'text-gray-400'}`} />
                   </button>
-
-                  {/* THE TOGGLE BUTTON */}
-                  <button
-                    onClick={() => setShowEnglishInCard(!showEnglishInCard)}
-                    className="flex items-center gap-1 px-3 py-1 rounded-full bg-gray-800 border border-gray-700 text-xs font-bold hover:bg-gray-700 transition-colors"
-                  >
-                    <ArrowRightLeft className="w-3 h-3 text-gray-400" />
-                    {showEnglishInCard ? "Show Hindi" : "Show English"}
-                  </button>
+                  {/* THE TOGGLE BUTTON - Only show if Hindi response exists */}
+                  {responseHi && (
+                    <button
+                      onClick={() => setShowEnglishInCard(!showEnglishInCard)}
+                      className="flex items-center gap-1 px-3 py-1 rounded-full bg-gray-800 border border-gray-700 text-xs font-bold hover:bg-gray-700 transition-colors"
+                    >
+                      <ArrowRightLeft className="w-3 h-3 text-gray-400" />
+                      {showEnglishInCard ? "Show Hindi" : "Show English"}
+                    </button>
+                  )}
                 </div>
               </div>
 
-              {/* Content Area - Switches based on toggle */}
               <div className="min-h-[60px]">
                 <p className={`text-lg font-medium leading-relaxed transition-opacity duration-300 ${showEnglishInCard ? 'text-blue-100' : 'text-orange-100'}`}>
                   {showEnglishInCard ? responseEn : responseHi}

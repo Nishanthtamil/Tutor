@@ -15,50 +15,80 @@ export async function POST(req: Request) {
 
         let systemPrompt = "";
 
-        const baseInstruction = `
-      You are an AI Tutor.
-      User: ${username}, Age: ${age}.
-      Target Mode: ${mode}.
-      
-      CORE TASK:
-      1. Analyze the input (text or image).
-      2. Provide the response in TWO languages: English and Hindi.
-      
-      FORMAT:
-      You must output a strictly valid JSON object with these exact keys:
-      {
-        "english": "The response in English",
-        "hindi": "The response in Hindi (Devanagari script)"
-      }
-    `;
+        // 1. Define Base Persona & Output Format based on Language
+        let persona = "";
+        let outputFormat = "";
+
+        if (tutorLang === 'english') {
+            persona = `
+        You are an English Tutor.
+        User: ${username}, Age: ${age}.
+        
+        CORE TASK:
+        1. Analyze the input.
+        2. Act as a guide/tutor teaching English.
+        3. Provide the response primarily in English.
+        4. Do NOT generate Hindi text.
+      `;
+            outputFormat = `
+        FORMAT:
+        Output a strictly valid JSON object:
+        {
+          "english": "The response in English",
+          "hindi": "" 
+        }
+        (Leave 'hindi' empty).
+      `;
+        } else {
+            // Hindi Mode
+            persona = `
+        You are a Hindi Tutor.
+        User: ${username}, Age: ${age}.
+        
+        CORE TASK:
+        1. Analyze the input.
+        2. Act as a guide/tutor teaching Hindi.
+        3. Provide the response in TWO languages: English and Hindi.
+      `;
+            outputFormat = `
+        FORMAT:
+        Output a strictly valid JSON object:
+        {
+          "english": "The response in English",
+          "hindi": "The response in Hindi (Devanagari script)"
+        }
+      `;
+        }
+
+        const baseInstruction = `${persona}\n${outputFormat}`;
+
+        // 2. Add Mode-Specific Context
         if (mode === 'conversation') {
             const tone = isKid ? "playful, simple words, use emojis" : "friendly, helpful";
             systemPrompt = `
         ${baseInstruction}
         CONTEXT: Casual conversation.
+        - Tone: ${tone}.
         - If Image provided: Explain what is in the image nicely.
         - If Text provided: Reply to the user's chat.
-        - Tone: ${tone}.
-        - If the user is learning Hindi, the 'hindi' field is the primary answer.
-        - If the user is learning English, the 'english' field is the primary answer.
+        ${tutorLang === 'english' ? "- Focus on correcting grammar or encouraging English usage." : "- Help the user learn Hindi."}
       `;
-        }
-        else if (mode === 'translator') {
+        } else if (mode === 'translator') {
             systemPrompt = `
         ${baseInstruction}
         CONTEXT: Strict Translation.
-        - If input is English, provide the Hindi translation in 'hindi' field.
-        - If input is Hindi, provide the English translation in 'english' field.
-        - Populated the other field with the original text (or a clarification).
+        ${tutorLang === 'english'
+                    ? "- Translate the input text into English."
+                    : "- If input is English, provide Hindi translation.\n- If input is Hindi, provide English translation."
+                }
       `;
-        }
-        else if (mode === 'dictionary') {
+        } else if (mode === 'dictionary') {
             systemPrompt = `
         ${baseInstruction}
         CONTEXT: Dictionary / Meaning.
         - Define the word or the main object in the image.
         - Structure: Meaning + 1 Example Sentence.
-        - Ensure both 'english' and 'hindi' fields contain the full definition in their respective languages.
+        ${tutorLang === 'english' ? "- Provide definition in English." : "- Provide definition in both English and Hindi."}
       `;
         }
 
@@ -85,7 +115,7 @@ export async function POST(req: Request) {
 
         return NextResponse.json({
             english: result.english || "Error processing English response.",
-            hindi: result.hindi || "त्रुटि: उत्तर संसाधित नहीं हो सका।"
+            hindi: result.hindi !== undefined ? result.hindi : (tutorLang === 'hindi' ? "त्रुटि: उत्तर संसाधित नहीं हो सका।" : "")
         });
 
     } catch (error) {
